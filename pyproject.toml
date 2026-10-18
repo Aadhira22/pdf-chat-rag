@@ -1,0 +1,36 @@
+[project]
+name = "rag-production-app"
+version = "0.1.0"
+description = "Production-style RAG app: FastAPI + Inngest + Qdrant + Streamlit, powered by OpenAI"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "fastapi>=0.142.3",
+    "inngest>=0.5.19",
+    "llama-index-core>=0.14.25",
+    "llama-index-readers-file>=0.7.0",
+    "openai>=3.26.0",
+    "pydantic-settings>=2.15.0",
+    "python-dotenv>=1.2.4",
+    "qdrant-client>=1.19.1",
+    "requests>=2.34.2",
+    "slowapi>=0.1.9",
+    "streamlit>=1.65.0",
+    "uvicorn>=0.54.0",
+]
+
+[project.scripts]
+pdf-chat-rag = "pdf_chat_rag:main"
+
+[tool.uv.build-backend]
+module-name = "pdf_chat_rag"
+
+[build-system]
+requires = ["uv_build>=0.12.20,<0.13.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "httpx>=0.28.1",
+    "pytest>=9.1.1",
+]

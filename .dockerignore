@@ -1,0 +1,10 @@
+.git
+.venv
+node_modules
+.env
+__pycache__
+*.pyc
+uploads
+qdrant_storage
+*.pdf
+eval/dataset.jsonl

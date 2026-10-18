@@ -1,0 +1,74 @@
+# One-command startup:  docker compose up --build
+#   Streamlit UI      http://localhost:8501
+#   FastAPI + docs    http://localhost:8000/docs
+#   Inngest dashboard http://localhost:8288
+#   Qdrant dashboard  http://localhost:6333/dashboard
+
+x-app: &app
+  build: .
+  image: rag-production-app:latest
+
+services:
+  qdrant:
+    image: qdrant/qdrant:latest
+    ports:
+      - "6333:6333"
+    volumes:
+      - qdrant_storage:/qdrant/storage
+
+  api:
+    <<: *app
+    command: uvicorn pdf_chat_rag.main:app --host 0.0.0.0 --port 8000
+    env_file:
+      - path: .env # holds OPENAI_API_KEY (copy .env.example to .env)
+        required: false
+    environment:
+      QDRANT_URL: http://qdrant:6333
+      INNGEST_URL: http://inngest:8288
+      UPLOADS_DIR: /app/uploads
+    volumes:
+      - uploads:/app/uploads # shared with streamlit: it saves PDFs, the API reads them
+    ports:
+      - "8000:8000"
+    depends_on:
+      - qdrant
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 10s
+
+  inngest:
+    image: inngest/inngest:latest
+    command: inngest dev -u http://api:8000/api/inngest --no-discovery
+    ports:
+      - "8288:8288"
+    depends_on:
+      api:
+        condition: service_healthy
+
+  streamlit:
+    <<: *app
+    command: streamlit run src/pdf_chat_rag/streamlit_app.py --server.address 0.0.0.0 --server.port 8501
+    environment:
+      API_URL: http://api:8000
+      INNGEST_URL: http://inngest:8288
+      UPLOADS_DIR: /app/uploads
+    volumes:
+      - uploads:/app/uploads
+    ports:
+      - "8501:8501"
+    depends_on:
+      api:
+        condition: service_healthy
+      inngest:
+        condition: service_started
+
+volumes:
+  qdrant_storage:
+  uploads:
